@@ -2,3 +2,10 @@
 Goal: Enabling interactive event data exploration for domain experts
 
 Name of the prototype: EDE4DE (Event Data Exploration 4 Domain Experts)
+
+
+Notes for set-up:
+- Pfad zum virtuellen Environment und für die Aktivierung: C:\Users\julia\virtualenvs\pm\Scripts\python.exe
+
+Execute streamlilt app:
+- Example with main.py Script: streamlit run main.py
