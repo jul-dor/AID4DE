@@ -1,16 +1,32 @@
 import streamlit as st
+import pandas as pd
 
-# Titel und Beschreibung
-st.title("Event Data Exploration 4 Domain Experts")
-st.write("Hi! How ready are you to check the representativeness of your event data?")
+st.set_page_config(page_title = "EDE4DE", layout ="wide")
+st.title("👋 Welcome")
 
-# Slider
-zahl = st.slider("Scale from 1 to 100", 1, 100, 50)
-st.write(f"You have chosen {zahl}.")
+st.markdown("""
+Welcome to **EDE4DE** - your tool for interactive event data preparation
+""")
 
-# Eingabe-Feld
-name = st.text_input("Do you have further input for me?")
+if "uploaded_file_name" in st.session_state:
+    st.info(f"✅ Current file: **{st.session_state.uploaded_file_name}**")
+    if "df" in st.session_state:
+        st.dataframe(st.session_state.df.head())
 
-# Button
-if st.button("Say Hello!"):
-    st.write(f"Hello, {name}!")
+uploaded_file = st.file_uploader("Upload your CSV or JSON file", type=["csv", "json"])
+if uploaded_file:
+    try:
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_json(uploaded_file)
+        st.session_state.df = df
+        st.session_state.uploaded_file_name = uploaded_file.name
+        st.success(f"✅ File '{uploaded_file.name}' uploaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
+
+question = st.text_area("Analysis question:")
+if question:
+    st.session_state.question_data = question
+    st.success("✅ Question saved!")
