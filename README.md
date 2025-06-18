@@ -1,14 +1,7 @@
-# Masterthesis
-Goal: Enabling interactive event data exploration for domain experts
+# AID4DE
+Goal: Enabling data validation for domain experts to assess the fitness for purpose of event logs for Process Mining
 
-Name of the prototype: EDE4DE (Event Data Exploration 4 Domain Experts)
-
-
-Notes for set-up:
-- Pfad zum virtuellen Environment und für die Aktivierung: C:\Users\julia\virtualenvs\pm\Scripts\python.exe
-
-Execute streamlilt app:
-- Example with main.py Script: streamlit run main.py
+Name of the prototype: AID4DE (AI-assisted Data Validation for Domain Experts)
 
 # 🤖 Streamlit prototype to enable interactive event data exploration for domain experts
 
