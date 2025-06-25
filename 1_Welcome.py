@@ -5,9 +5,9 @@ import pm4py
 import tempfile
 
 # Setting up the streamlit page
-st.set_page_config(page_title = "IDV4DE", layout ="wide")
+st.set_page_config(page_title = "AID4DE", layout ="wide")
 st.title("👋 Welcome")
-st.markdown("""Welcome to **IDV4DE** - your tool to evaluate the representativeness of event data""")
+st.markdown("""Welcome to **AID4DE** - your tool to validate event log data and support its fitness for purpose evaluation""")
 
 uploaded_file = st.file_uploader("Upload your CSV or XES file", type=["csv", "xes"])
 
