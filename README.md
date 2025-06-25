@@ -113,7 +113,7 @@ Dependent on your Process Mining project you can state different analysis questi
 - `README.md`: This file. Contains an overview of the project.
 
 ## License
-TBD?
+See the [LICENSE](LICENSE) file for license rights and limitations (MIT).
 
 ## Notes
 - Do **not** commit your `.env` file – it's excluded via `.gitignore`.
