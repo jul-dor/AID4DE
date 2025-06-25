@@ -110,6 +110,7 @@ Dependent on your Process Mining project you can state different analysis questi
 - `.env.template`: Listing the environment variables required by the provided tool.
 - `.gitignore`: Configuration file that tells Git which files or directories to ignore and exclude from version control. 
 - `1_Welcome.py`: Welcomes the domain expert and enables upload of event log and analysis question.
+- `LICENSES.md`: License file (MIT).
 - `README.md`: This file. Contains an overview of the project.
 
 ## License
