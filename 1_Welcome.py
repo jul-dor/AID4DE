@@ -8,7 +8,7 @@ import tempfile
 st.set_page_config(page_title = "AID4DE", layout ="wide")
 st.title("👋 Welcome")
 st.markdown("""Welcome to **AID4DE** - your tool to validate event log data for Process Mining!
-            Please upload an event log and an analysis question to check the validity of your event log for its intended analytical purpose!""")
+            Please upload an event log and at least one analysis question to check the validity of your event log for its intended analytical purpose!""")
 
 uploaded_file = st.file_uploader("Upload your CSV or XES file", type=["csv", "xes"])
 
