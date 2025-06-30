@@ -114,6 +114,11 @@ Dependent on your Process Mining project you can state different analysis questi
   - Which roles or departments have the greatest impact on process outcomes and quality?
 
 ## File descriptions
+- `images/`: Contains snippets from the interfaces of the prototype.
+  - `initial_data_exploration_page.png`: Shows the Initial Data Exploration page.
+  - `initial_process_exploration_page.png`: Shows the Initial Process Exploration page.
+  - `interactive_event_log_exploration_page.png`: Shows the Interactive Event Log Exploration page.
+  - `welcome_page.png`: Shows the Welcome page of *AID4DE*.
 - `pages/`: Contains python scripts reflecting the pages witin interactive data validation.
   - `2_Data_Exploration.py`: Analysis of the uploaded event log through automatically generated visualizations.
   - `3_Discovery.py`: Analysis of the uploaded event log from a process-centric perspective.
