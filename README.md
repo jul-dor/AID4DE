@@ -2,6 +2,18 @@
 ## Overview
 This project provides *AID4DE*, a tool for interactive data validation of event logs in the field of Process Mining. By leveraging Generative AI, it empowers domain experts to explore event log data and establish a foundation for evaluating its fitness for purpose.
 
+On the welcome page, an XES event log, which fulfills the structural requirements to be parsed by Process Mining algorithms, and relevant analysis questions can be uploaded.
+![Welcome Page](images/welcome_page.png)
+
+The initial data exploration page facilitates the generation of a preliminary understanding of the event log through a set of predefined visualizations.
+![Initial Data Exploration Page](images/initial_data_exploration_page.png)
+
+The initial process exploration page enables a detailed examination of process-centric visualizations, allowing adjustment of the variant coverage threshold to refine the analysis.
+![Initial Process Exploration Page](images/initial_process_exploration_page.png)
+
+The interactive event log exploration page recommends additional potentially insightful visual representations aimed at assessing the validity of the event log.
+![Interactive Event Log Exploration Page](images/interactive_event_log_exploration.png)
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Clone the repository](#clone-the-repository)
