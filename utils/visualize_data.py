@@ -8,21 +8,26 @@ import numpy as np
 import seaborn as sns
 
 # Integrating utility functions
-from utils.state import init_session_state, feedback_input, record_feedback_from_key, set_viz_meta 
-from utils.media import save_matplotlib_figure_to_bytes, register_png_file_path
+from utils.state import init_session_state, feedback_input, attach_text_to_visual, set_viz_meta 
+from utils.media import register_matplotlib_figure, register_png_file_path, register_dataframe_as_image, register_kv_table_for_export
 
 # Ensure session scaffolding exists
 init_session_state()  
 
-# ---------- Helpers ----------
-def _save_fig_and_feedback(fig, *, key: str, title: str, fb_key: str, fb_label: str):
-    """Save figure and feedback to session state."""
-    save_matplotlib_figure_to_bytes(fig, key=key, title=title)
+# ---------- Small helper to reduce boilerplate ----------
+def finalize_plot(fig, *, viz_key: str, title: str, fb_key: str, fb_label: str, dpi: int = 150):
+    """
+    Common tail for matplotlib plots:
+    - Register figure bytes for the report.
+    - Render feedback input + bind to the same visualization key.
+    """
+    st.pyplot(fig)
+    register_matplotlib_figure(fig, key=viz_key, title=title, dpi=dpi)
     feedback_input(fb_label, fb_key)
-    record_feedback_from_key(fb_key, fb_label)
+    attach_text_to_visual(viz_key, fb_label, kind="feedback", from_input_key=fb_key)
+    plt.close(fig)
 
-
-# ---------- Plots ----------
+# ---------- Plots, visualizations & statistics ----------
 
 # Generating absolute activity frequency plot within frequency & distribution analysis
 def plot_absolute_activity_frequency(df, activity_key):
@@ -49,13 +54,12 @@ def plot_absolute_activity_frequency(df, activity_key):
         ax.set_ylabel('Frequencies')
         title = 'Absolute Activity Frequency Histogram'
         ax.set_title(title)
-        st.pyplot(fig)
+        
 
         if hidden_activities:
             hidden_text = ", ".join([f"{name} ({count})" for name, count in hidden_activities])
             st.caption(f"Not shown in chart: {hidden_text}")
 
-        # --- Metadata ---
         set_viz_meta("absolute_activity_frequency_graph", {
             "type": "bar_chart",
             "title": title,
@@ -65,8 +69,9 @@ def plot_absolute_activity_frequency(df, activity_key):
             "total_activities": int(sum(activity_counts.values()))
         })
 
-        _save_fig_and_feedback(
-            fig, key="absolute_activity_frequency_graph",
+        finalize_plot(
+            fig,
+            viz_key="absolute_activity_frequency",
             title=title,
             fb_key="feedback_absolute_activity_frequency",
             fb_label="Does the above visualization reflect your experience?"
@@ -107,13 +112,11 @@ def plot_relative_activity_frequency(df, activity_key):
         ax.set_ylabel('Relative Frequency (%)')
         title = 'Relative Activity Frequency Histogram'
         ax.set_title(title)
-        st.pyplot(fig)
 
         if hidden_activities:
             hidden_text = ", ".join([f"{name} ({round(percent, 2)}%)" for name, percent in hidden_activities])
             st.caption(f"Not shown in chart: {hidden_text}")
 
-        # --- Metadata ---
         set_viz_meta("relative_activity_frequency_graph", {
             "type": "bar_chart",
             "title": title,
@@ -123,8 +126,9 @@ def plot_relative_activity_frequency(df, activity_key):
             "total_activities": int(total_activities)
         })
 
-        _save_fig_and_feedback(
-            fig, key="relative_activity_frequency_graph",
+        finalize_plot(
+            fig,
+            viz_key="relative_activity_frequency",
             title=title,
             fb_key="feedback_relative_activity_frequency",
             fb_label="Does the above visualization reflect your experience?"
@@ -175,13 +179,11 @@ def plot_absolute_case_frequency(df, case_id_key, activity_key, timestamp_key):
             title = "Absolute Case Frequency Histogram (showing 80% of cases in the log)"
         ax.set_title(title)
         plt.xticks(rotation=45, ha="right")
-        st.pyplot(fig)
 
         st.markdown("### Legend")
         for label, variant in variant_mapping.items():
             st.markdown(f"**{label}**: {', '.join(variant)}")
 
-        # --- Metadata ---
         set_viz_meta("absolute_case_frequency_graph", {
             "type": "bar_chart",
             "title": "Top 80% Frequent Case Variants",
@@ -191,9 +193,10 @@ def plot_absolute_case_frequency(df, case_id_key, activity_key, timestamp_key):
             "coverage_share": round(cumulative_count / total_count, 4)
         })
 
-        _save_fig_and_feedback(
-            fig, key="absolute_case_frequency_graph",
-            title="Absolute Case Frequency Histogram",
+        finalize_plot(
+            fig,
+            viz_key="absolute_case_frequency",
+            title="Top 80% Frequent Case Variants",
             fb_key="feedback_absolute_case_frequency",
             fb_label="Does the above visualization reflect your experience?"
         )
@@ -243,13 +246,11 @@ def plot_relative_case_frequency(df, case_id_key, activity_key, timestamp_key):
             title = "Relative Case Frequency Histogram (showing 80% of cases in the log)"
         ax.set_title(title)    
         plt.xticks(rotation=45, ha="right")
-        st.pyplot(fig)
 
         st.markdown("### Legend")
         for label, variant in variant_mapping.items():
             st.markdown(f"**{label}**: {', '.join(variant)}")
 
-        # --- Metadata ---
         set_viz_meta("relative_case_frequency_graph", {
             "type": "bar_chart",
             "title": "Top 80% Case Variants by Relative Frequency",
@@ -262,9 +263,10 @@ def plot_relative_case_frequency(df, case_id_key, activity_key, timestamp_key):
             "coverage_share": round(cumulative_prob, 4)
         })
 
-        _save_fig_and_feedback(
-            fig, key="relative_case_frequency_graph",
-            title="Relative Case Frequency Histogram",
+        finalize_plot(
+            fig,
+            viz_key="relative_case_frequency",
+            title="Top 80% Case Variants by Relative Frequency",
             fb_key="feedback_relative_case_frequency",
             fb_label="Does the above visualization reflect your experience?"
         )
@@ -314,12 +316,10 @@ def plot_case_length_distribution(df, case_id_key, activity_key, timestamp_key):
         ax.set_xticks(sorted_lengths)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
         fig.tight_layout()
-        st.pyplot(fig)
 
         if hidden_percentage > 0:
             st.caption(f"{hidden_percentage}% of cases with less frequent case lengths are not shown in the plot.")
 
-        # --- Metadata ---
         set_viz_meta("case_length_distribution_graph", {
             "type": "bar_chart",
             "title": "Distribution of Case Lengths",
@@ -329,9 +329,10 @@ def plot_case_length_distribution(df, case_id_key, activity_key, timestamp_key):
             "hidden_share_percent": hidden_percentage
         })
 
-        _save_fig_and_feedback(
-            fig, key="case_length_distribution_graph",
-            title="Case length distribution",
+        finalize_plot(
+            fig,
+            viz_key="case_length_distribution",
+            title="Distribution of Case Lengths",
             fb_key="feedback_case_length_distribution",
             fb_label="Does the above visualization reflect your experience?"
         )
@@ -364,13 +365,11 @@ def plot_absolute_resource_frequency(df, resource_key):
         ax.set_ylabel("Frequency")
         title = "Absolute Frequency of Resources"
         ax.set_title(title)
-        st.pyplot(fig)
 
         if hidden_resources:
             hidden_text = ", ".join([f"{res} ({count})" for res, count in hidden_resources])
             st.caption(f"Not shown in chart: {hidden_text}")
 
-        # --- Metadata ---
         set_viz_meta("resource_frequency_absolute", {
             "type": "bar_chart",
             "title": title,
@@ -380,8 +379,9 @@ def plot_absolute_resource_frequency(df, resource_key):
             "total_events": int(sum(resource_counts.values()))
         })
 
-        _save_fig_and_feedback(
-            fig, key="resource_frequency_absolute",
+        finalize_plot(
+            fig,
+            viz_key="resource_frequency_absolute",
             title=title,
             fb_key="feedback_absolute_resource_frequency",
             fb_label="Does the above visualization reflect your experience?"
@@ -423,13 +423,11 @@ def plot_relative_resource_frequency(df, resource_key):
         ax.set_ylabel("Relative Frequency (%)")
         title = "Relative Frequency of Resources"
         ax.set_title(title)
-        st.pyplot(fig)
 
         if hidden_resources:
             hidden_text = ", ".join([f"{res} ({round(freq, 2)}%)" for res, freq in hidden_resources])
             st.caption(f"Not shown in chart: {hidden_text}")
 
-        # --- Metadata ---
         set_viz_meta("relative_resource_frequency", {
             "type": "bar_chart",
             "title": title,
@@ -439,8 +437,9 @@ def plot_relative_resource_frequency(df, resource_key):
             "total_events": int(total_resources)
         })
 
-        _save_fig_and_feedback(
-            fig, key="relative_resource_frequency",
+        finalize_plot(
+            fig,
+            viz_key="relative_resource_frequency",
             title=title,
             fb_key="feedback_relative_resource_frequency",
             fb_label="Does the above visualization reflect your experience?"
@@ -464,7 +463,6 @@ def plot_events_per_time_graph(df, case_id_key, activity_key, timestamp_key):
         st.image(file_path, caption= 'Events over Time')
         register_png_file_path(file_path, key="events_per_time_graph", title="Events over time")
 
-         # --- Metadata (coarse) ---
         set_viz_meta("events_per_time_graph", {
             "type": "image",
             "title": "Events over time",
@@ -476,7 +474,7 @@ def plot_events_per_time_graph(df, case_id_key, activity_key, timestamp_key):
         fb_key = "feedback_events_per_time_graph"
         fb_label = "Does the above visualization reflect your experience?"
         feedback_input(fb_label, fb_key)
-        record_feedback_from_key(fb_key, fb_label)
+        attach_text_to_visual("events_per_time_graph", fb_label, kind="feedback", from_input_key=fb_key)
     except Exception as e:
         st.warning(f"Could not render events per time graph: {e}")
 
@@ -516,7 +514,6 @@ def plot_event_distribution_graphs(df, case_id_key, activity_key, timestamp_key)
             key = f"event_distribution_{distr_type}"
             register_png_file_path(file_path, key=key, title=f"Events by {distr_type.replace('_',' ').title()}")
 
-            # --- Metadata ---
             if distr_type == "days_week":
                 series = df[timestamp_key].dt.dayofweek
                 counter = Counter(series)
@@ -552,67 +549,12 @@ def plot_event_distribution_graphs(df, case_id_key, activity_key, timestamp_key)
             })
 
             fb_key = f"feedback_event_distribution_{distr_type}"
-            fb_label = "Does the above visualization reflect your experience?"
+            fb_label = f"Does the above visualization reflect your experience?"
             feedback_input(fb_label, fb_key)
-            record_feedback_from_key(fb_key, fb_label)
+            attach_text_to_visual(f"event_distribution_{distr_type}", fb_label, kind="feedback", from_input_key=fb_key)
                 
         except Exception as e:
             st.warning(f"Could not render event distribution graph for '{distr_type}': {e}")
-
-# Generating dotted chart plot within temporal analysis
-def plot_dotted_chart(df, case_id_key, activity_key, timestamp_key):
-    
-    variants = pm4py.get_variants(
-        df,
-        activity_key=activity_key,
-        case_id_key=case_id_key,
-        timestamp_key=timestamp_key
-    )
-
-    sorted_variants = sorted(variants.items(), key=lambda x: x[1], reverse=True)
-
-    total_count = sum([count for _, count in sorted_variants])
-    cumulative_count = 0
-    selected_variant_names = []
-
-    for variant, count in sorted_variants:
-        cumulative_count += count
-        selected_variant_names.append(variant)
-        if cumulative_count / total_count >= 0.8:
-            break
-
-    filtered_df = pm4py.filter_variants(
-        df,
-        selected_variant_names,
-        activity_key = activity_key,
-        case_id_key = case_id_key,
-        timestamp_key = timestamp_key
-    )
-    
-    file_path = "dotted_chart.png"
-    pm4py.vis.save_vis_dotted_chart(
-        filtered_df,
-        file_path = file_path,
-        activity_key = activity_key,
-        case_id_key = case_id_key,
-        timestamp_key = timestamp_key,
-    )
-
-    st.image(file_path, caption="Dotted Chart")
-    register_png_file_path(file_path, key="dotted_chart", title="Dotted Chart")
-
-    # --- Metadata (variant coverage and list) ---
-    set_viz_meta("dotted_chart", {
-        "type": "image",
-        "title": "Dotted Chart",
-        "selected_variants_count": len(selected_variant_names),
-        "coverage_share": round(cumulative_count / total_count, 4)
-    })
-
-    fb_key = "feedback_dotted_chart"
-    fb_label = "Does the above visualization reflect your experience?"
-    feedback_input(fb_label, fb_key)
-    record_feedback_from_key(fb_key, fb_label)
 
 # Generating case duration plot within performance analysis
 def plot_case_duration_graph(case_id_key, activity_key, timestamp_key):
@@ -628,7 +570,8 @@ def plot_case_duration_graph(case_id_key, activity_key, timestamp_key):
         )
         st.image('case_duration_graph.png', caption = 'Case durations within the data')
         
-        # --- Metadata (static axes description) ---
+        register_png_file_path(file_path, key="case_duration_graph", title="Case durations")
+
         set_viz_meta("case_duration_graph", {
             "type": "image",
             "title": "Case durations",
@@ -640,7 +583,8 @@ def plot_case_duration_graph(case_id_key, activity_key, timestamp_key):
         fb_key = "feedback_case_duration"
         fb_label = "Does the above visualization reflect your experience?"
         feedback_input(fb_label, fb_key)
-        record_feedback_from_key(fb_key, fb_label)
+        attach_text_to_visual("case_duration_graph", fb_label, kind="feedback", from_input_key=fb_key)
+
     except Exception as e:
         st.warning (f"Could not render the case duration graph: {e}")
 
@@ -666,14 +610,23 @@ def retrieve_max_min_avg_case_duration(case_id_key, activity_key, timestamp_key)
         'Standard Deviation Case Length [Day]': round(float(case_durations_days.std()), 2),
     }
 
-    # --- Metadata ---
     set_viz_meta("case_duration_facts", {
         "type": "table",
         "title": "Case duration summary (days)",
         "stats": stats
     })
 
-    return pd.DataFrame(list(stats.items()), columns =["Statistic", "Value"])
+    df_stats = pd.DataFrame(list(stats.items()), columns=["Statistic", "Value"])
+    st.dataframe(df_stats, hide_index=True, use_container_width=True)
+
+    register_dataframe_as_image(stats, key="case_duration_facts_tbl", title="Case duration summary (days)")
+
+    fb_key = "feedback_case_duration_facts"
+    fb_label = "Do the above statistics reflect your experience?"
+    feedback_input(fb_label, fb_key)
+    attach_text_to_visual("case_duration_facts_tbl", fb_label, kind="feedback", from_input_key=fb_key)
+    
+    return df_stats
 
 # Generating task responsibility heatmap within resource analysis
 def plot_task_responsbility_overview(df, activity_key, resource_key):
@@ -700,10 +653,7 @@ def plot_task_responsbility_overview(df, activity_key, resource_key):
     ax.set_title(title)
     plt.xticks(rotation=45, ha='right')
     fig.tight_layout()
-    st.pyplot(fig)
 
-     # --- Metadata ---
-    # Extract a few top cells by percentage to give LLM a compact hint.
     top_cells = (
         heatmap_percent.stack()
         .sort_values(ascending=False)
@@ -721,12 +671,52 @@ def plot_task_responsbility_overview(df, activity_key, resource_key):
         "shape": {"activities": int(heatmap_percent.shape[0]), "resources": int(heatmap_percent.shape[1])}
     })
 
-    _save_fig_and_feedback(
-        fig, key="task_responsibility_overview",
-        title=title,
-        fb_key="feedback_task_responsibility_overview",
-        fb_label="Does the above visualization reflect your experience?"
+    finalize_plot(
+            fig,
+            viz_key="task_responsibility_overview",
+            title=title,
+            fb_key="feedback_task_responsibility_overview",
+            fb_label="Does the above visualization reflect your experience?"
+        )
+
+def render_summary_statistics(df, case_id_key, activity_key, timestamp_key):
+    summary = {}
+
+    summary["Total Events"] = len(df)
+    summary["Number of cases"] = df[case_id_key].nunique()
+
+    variants = pm4py.get_variants(df, activity_key=activity_key, case_id_key=case_id_key, timestamp_key=timestamp_key)
+    summary["Number of Variants"] = len(variants)
+
+    df[timestamp_key] = pd.to_datetime(df[timestamp_key])
+    start_time, end_time = df[timestamp_key].min(), df[timestamp_key].max()
+    summary["Time Horizon"] = f"{start_time.strftime('%d/%m/%Y %H:%M:%S')} - {end_time.strftime('%d/%m/%Y %H:%M:%S')}"
+
+    event_attrs = pm4py.get_event_attributes(df)
+    summary["Event Attributes"] = ", ".join(event_attrs)
+
+    trace_attrs = pm4py.get_trace_attributes(df)
+    summary["Case Attributes"] = "-" if trace_attrs in (["case:concept:name"], []) else ", ".join(trace_attrs)
+
+    summary["Events per Case"] = round(summary["Total Events"] / max(summary["Number of cases"], 1), 2)
+
+    df_summary = pd.DataFrame(list(summary.items()), columns=["Statistic", "Value"])
+    with st.expander("📊 Summary Statistics"):
+        st.dataframe(df_summary, hide_index=True, use_container_width=True)
+        fb_key = "feedback_summary_statistics"
+        fb_label = "Do the above statistics reflect your experience?"
+        feedback_input(fb_label, fb_key)
+
+    set_viz_meta("summary_statistics", {"type": "table", "title": "Summary statistics", "values": summary})
+
+    rows = list(df_summary.values.tolist())
+    register_kv_table_for_export(
+        rows,
+        key="summary_statistics_tbl",
+        title="Summary statistics",
+        col_widths_cm=(6.0, 10.0)  
     )
+    attach_text_to_visual("summary_statistics_tbl", fb_label, kind="feedback", from_input_key="feedback_summary_statistics")
 
 # ---------- Public entry point ----------
 
@@ -734,64 +724,7 @@ def plot_task_responsbility_overview(df, activity_key, resource_key):
 def run_visualizations(df, case_id_key, activity_key, timestamp_key, resource_key):
     """Main entry: renders all plots, captures feedback, stores metadata; API-compatible."""
     # --- Summary statistics (metadata only, shown as table in UI) ---
-    summary_stats = {}
-
-    # Number of events
-    num_events = len(df)
-    summary_stats['Total Events'] = num_events
-    
-    # Number of cases
-    unique_case_count = df[case_id_key].nunique()
-    summary_stats['Number of cases'] = unique_case_count
-
-    # Number of variants
-    variants = pm4py.get_variants(
-        df,
-        activity_key= activity_key,
-        case_id_key = case_id_key,
-        timestamp_key = timestamp_key
-    )
-    summary_stats['Number of Variants'] = len(variants)
-
-    # Time range of the event log
-    df[timestamp_key] = pd.to_datetime(df[timestamp_key])
-    start_time = df[timestamp_key].min()
-    end_time = df[timestamp_key].max()
-    formatted_timeframe = f"{start_time.strftime('%d/%m/%Y %H:%M:%S')} - {end_time.strftime('%d/%m/%Y %H:%M:%S')}"
-    summary_stats['Time Horizon'] = f"{formatted_timeframe}"
-
-    # Event attributes overview
-    event_attributes = pm4py.get_event_attributes(df)
-    formatted_event_attributes = ', '.join(event_attributes)
-    summary_stats['Event Attributes'] = formatted_event_attributes
-
-    # Case attributes overview
-    trace_attributes = pm4py.get_trace_attributes(df)
-    if trace_attributes == ["case:concept:name"] or trace_attributes == []:
-        summary_stats['Case Attributes'] = '-'
-    else:
-        formatted_trace_attributes = ', '.join(trace_attributes)
-        summary_stats['Case Attributes'] = formatted_trace_attributes
-
-    # Events per Case
-    events_per_case = summary_stats['Total Events']/summary_stats['Number of cases']
-    summary_stats['Events per Case'] = round(events_per_case, 2)
-
-    # Show summary statistics in streamlit
-    summary_df = pd.DataFrame(list(summary_stats.items()), columns=["Statistic", "Value"])
-    with st.expander("📊 Summary Statistics"):
-        st.dataframe(summary_df, hide_index=True, use_container_width=True)
-        fb_key = "feedback_summary_statistics"
-        fb_label = "Do the above statistics reflect your experience?"
-        feedback_input(fb_label, fb_key)
-        record_feedback_from_key(fb_key, fb_label)
-
-    # Adding metadata
-    set_viz_meta("summary_statistics", {
-        "type": "table",
-        "title": "Summary statistics",
-        "values": summary_stats
-    })
+    render_summary_statistics(df, case_id_key, activity_key, timestamp_key)
 
     # --- Frequency & distribution analysis ---
     with st.expander("🔁 Frequency & Distribution Analysis"):
@@ -805,12 +738,10 @@ def run_visualizations(df, case_id_key, activity_key, timestamp_key, resource_ke
     with st.expander("🕒 Temporal Analysis"):
         plot_events_per_time_graph(df, case_id_key, activity_key, timestamp_key)
         plot_event_distribution_graphs(df, case_id_key, activity_key, timestamp_key)
-        #plot_dotted_chart(df, case_id_key, activity_key, timestamp_key)
-    
+        
     # --- Performance analysis ---
     with st.expander("⚡ Performance Analysis"):
-        performance_summary_df = retrieve_max_min_avg_case_duration(case_id_key, activity_key, timestamp_key)
-        st.dataframe(performance_summary_df, hide_index = True, use_container_width = True)
+        retrieve_max_min_avg_case_duration(case_id_key, activity_key, timestamp_key)
         plot_case_duration_graph(case_id_key, activity_key, timestamp_key)
 
     # --- Resource analysis ---

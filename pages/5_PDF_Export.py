@@ -14,21 +14,13 @@ init_session_state()
 
 st.title("PDF-Export")
 st.markdown("""Export your conducted data validation as a PDF report.""")
-st.markdown("---")
 
 # --- Quick status checks (what's available in memory) ---
 items = st.session_state.get("viz_images", {}).get("items", [])
 feedbacks = st.session_state.get("feedbacks", {})
 question_data = (st.session_state.get("question_data") or "").strip()
 
-with st.container():
-    cols = st.columns(3)
-    cols[0].metric("Queued visuals", len(items))
-    cols[1].metric("Feedback entries", len(feedbacks))
-    cols[2].metric("Context provided", "Yes" if question_data else "No")
-
 # --- Export action ---
-st.markdown("---")
 st.subheader("Generate PDF")
 
 # Tip: We only export images + feedback (no viz metadata).
