@@ -14,9 +14,17 @@ The initial process exploration page enables a detailed examination of process-c
 
 ![Initial Process Exploration Page](images/initial_process_exploration_page.png)
 
-The interactive event log exploration page recommends additional potentially insightful visual representations aimed at assessing the validity of the event log.
+The interactive event log exploration page recommends and generates additional potentially insightful visual representations aimed at assessing the validity of the event log.
 
 ![Interactive Event Log Exploration Page](images/interactive_event_log_exploration_page.png)
+
+The PDF export page compiles all generated visualizations and their associated user feedback into a structured, ready-to-download report that consolidates insights from the entire validation activity.
+
+![PDF Export Page](images/pdf_export_page.png)
+
+The manual page provides an overview of the tool’s functionality and purpose.
+
+![PDF Export Page](images/manual_page.png)
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -118,25 +126,42 @@ Dependent on your Process Mining project you can state different analysis questi
   - `initial_data_exploration_page.png`: Shows the Initial Data Exploration page.
   - `initial_process_exploration_page.png`: Shows the Initial Process Exploration page.
   - `interactive_event_log_exploration_page.png`: Shows the Interactive Event Log Exploration page.
+  - `manual_page.png`: Shows the Manual page.
+  - `pdf_export_page.png`: Shows the PDF Export page.
   - `welcome_page.png`: Shows the Welcome page of *AID4DE*.
 - `pages/`: Contains python scripts reflecting the pages witin interactive data validation.
-  - `2_Data_Exploration.py`: Analysis of the uploaded event log through automatically generated visualizations.
-  - `3_Discovery.py`: Analysis of the uploaded event log from a process-centric perspective.
-  - `4_Interactive_Plot_Generation.py`: On-demand generation of further visualizations of the event log.
-  - `5_ Outlier_Analysis.py`: Analysis of outliers within the event log.
-  - `6_PDF_Export.py`: Generation of a summary report about the conducted data validation. 
+  - `2_Initial_Data_Exploration.py`: Analysis of the uploaded event log through automatically generated visualizations.
+  - `3_Initial_Process_Exploration.py`: Analysis of the uploaded event log from a process-centric perspective.
+  - `4_Interactive_Event_Log_Exploration.py`: On-demand generation of further visualizations of the event log.
+  - `5_PDF_Export.py`: Generation of a summary report about the conducted data validation. 
   - `manual.py`: Provision of background information about the tool.
 - `utils/`: Support scripts for interactive data validation
-  - `visualize_data`: Functions for the generation of visualizations and the extraction of representational semantics of the event log.
+  - `export.py`: Handles the assembly and generation of the final PDF report, combining visualizations and user feedback into a structured document.
+  - `interactive_exploration.py`: Orchestrates LLM-driven suggestions and dynamic creation of additional visualizations based on user-defined analysis questions.
+  - `media.py`: Manages the registration, formatting, and conversion of images and tables for display in Streamlit and inclusion in the PDF report.
+  - `process_exploration.py`: Provides functions for process-centric analysis, including BPMN discovery, DECLARE modeling, footprint generation, and extraction of representational semantics.
+  - `state.py`: Maintains and organizes session state, including extracted representational semantics, feedback entries, and export-ready content across all pages.
+  - `visualize_data`: Generates predefined event-log visualizations and extracts the corresponding representational semantics to support both interactive exploration and LLM context building.
 - `.env.template`: Listing the environment variables required by the provided tool.
 - `.gitignore`: Configuration file that tells Git which files or directories to ignore and exclude from version control. 
 - `1_Welcome.py`: Welcomes the domain expert and enables upload of event log and analysis question.
 - `LICENSES.md`: License file (MIT).
 - `README.md`: This file. Contains an overview of the project.
+- `requirements.txt`: Lists the required Python packages.
 
 ## License
 See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
 
 ## Notes
-- Do **not** commit your `.env` file – it's excluded via `.gitignore`.
-- A `.env.template` file is provided to help others understand what variables they need to set.
+
+### Environment Variables
+- Do **not** commit your `.env` file – it is excluded via `.gitignore` for security reasons.
+- A **`.env.template`** file is provided as a reference to indicate which environment variables must be configured (e.g., Azure OpenAI credentials).
+- Ensure that **all required environment variables** are properly set before starting the application.
+
+### Dependencies & Setup
+- The application relies on **pm4py** and **Graphviz** for process mining visualizations.  
+  Make sure that **Graphviz is installed system-wide** and available on your system’s `PATH`.
+- For a clean and reproducible setup, create a **fresh virtual environment** and install dependencies using:
+  ```bash
+  pip install -r requirements.txt
