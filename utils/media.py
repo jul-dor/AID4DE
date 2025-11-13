@@ -122,11 +122,13 @@ def register_kv_table_for_export(
     except Exception:
         pass
 
-    st.session_state.viz_images["items"].append({
+    item = {
         "key": key,
         "title": title,
-        "type": "rl_table",       # <— wichtig: spezieller Typ
-        "rows": rows,             # list[list[str, str]]
+        "type": "rl_table",       
+        "rows": rows,             
         "col_widths_cm": list(col_widths_cm),
-        "mime": "application/x-rl-table"
-    })
+        "mime": "application/x-rl-table",
+    }
+
+    _upsert_viz_item(item)

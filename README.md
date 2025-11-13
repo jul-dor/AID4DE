@@ -141,7 +141,7 @@ Dependent on your Process Mining project you can state different analysis questi
   - `media.py`: Manages the registration, formatting, and conversion of images and tables for display in Streamlit and inclusion in the PDF report.
   - `process_exploration.py`: Provides functions for process-centric analysis, including BPMN discovery, DECLARE modeling, footprint generation, and extraction of representational semantics.
   - `state.py`: Maintains and organizes session state, including extracted representational semantics, feedback entries, and export-ready content across all pages.
-  - `visualize_data`: Generates predefined event-log visualizations and extracts the corresponding representational semantics to support both interactive exploration and LLM context building.
+  - `visualize_data.py`: Generates predefined event-log visualizations and extracts the corresponding representational semantics to support both interactive exploration and LLM context building.
 - `.env.template`: Listing the environment variables required by the provided tool.
 - `.gitignore`: Configuration file that tells Git which files or directories to ignore and exclude from version control. 
 - `1_Welcome.py`: Welcomes the domain expert and enables upload of event log and analysis question.
@@ -165,3 +165,7 @@ See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
 - For a clean and reproducible setup, create a **fresh virtual environment** and install dependencies using:
   ```bash
   pip install -r requirements.txt
+
+### Limitations of LLM-Generated Visualizations
+- The *Interactive Event Log Exploration* page relies on the LLM to generate executable Python visualization code.
+- Generated code may occasionally be **incorrect, incomplete, or incompatible**, which can lead to runtime errors.
