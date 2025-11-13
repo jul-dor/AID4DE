@@ -1,103 +1,135 @@
-# Importing libraries
-import streamlit as st
-import pm4py
-from openai import AzureOpenAI
-from dotenv import load_dotenv
+# 4_Interactive_Event_Log_Exploration.py
+
 import os
+import sys
 
-# Setting up the streamlit page
-st.set_page_config(page_title="Interactive Event Log Exploration", layout = "wide")
+import streamlit as st
+import pandas as pd
+
+# Allow imports from project root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from utils.state import init_session_state
+from utils.interactive_exploration import (
+    suggest_visualizations,
+    run_generated_visualization,
+)
+
+# --- Page setup ---
+st.set_page_config(page_title="Interactive Event Log Exploration", layout="wide")
+init_session_state()
+
 st.title("Interactive Event Log Exploration")
-st.markdown("""The Interactive Event Log Exploration enables you to generate new plots based on LLM suggestions""")
+st.markdown(
+    """
+The Interactive Event Log Exploration lets you **generate additional, on-demand visualizations**
+based on your analysis question.  
+Suggestions are created by the LLM and executed directly on the uploaded event log.
+"""
+)
 
-# Sending error message if no event dataset and analysis question are uploaded
+# --- Guards ---
 if "df" not in st.session_state or "question_data" not in st.session_state:
     st.error("Please upload data and provide a question on the main page.")
     st.stop()
 
-if "selected_visualizations" not in st.session_state:
-    st.session_state["selected_visualizations"] = []
+df: pd.DataFrame = st.session_state["df"]
+case_id_key = st.session_state["case_id_key"]
+activity_key = st.session_state["activity_key"]
+timestamp_key = st.session_state["timestamp_key"]
+resource_key = st.session_state.get("resource_key")
 
-# Showing the name of the uploaded event dataset and the uploaded analysis question
+# show context
 col1, col2 = st.columns([1, 2])
 col1.markdown(f"📁 **{st.session_state.uploaded_file_name}**")
 col2.markdown(f"❓ **Question:** {st.session_state.question_data}")
-
 st.markdown("---")
 
-# Load environment variables
-load_dotenv()
+# --- init session containers for this page ---
+st.session_state.setdefault("ix_viz_suggestions", [])
+st.session_state.setdefault("ix_selected_viz_labels", [])
 
-# Azure OpenAI client
-client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-)
+# list of visualizations already covered on other pages (prompt hint)
+EXCLUDED_VIZ_LABELS = [
+    "absolute activity frequency",
+    "relative activity frequency",
+    "absolute case frequency",
+    "relative case frequency",
+    "event attribute frequency",
+    "case length distribution",
+    "events per time",
+    "daily event distribution",
+    "weekly event distribution",
+    "monthly event distribution",
+    "yearly event distribution",
+    "dotted chart",
+    "case duration distribution",
+    "task responsibility heatmap",
+    "resource attribute frequency",
+    "start activities",
+    "end activities",
+    "DECLARE model",
+    "footprint model",
+    "BPMN model",
+    "case variant distribution",
+]
 
-# Generate suggestions for visualizations
-def get_visualization_suggestions(question: str, excluded_charts: list) -> list:
-    excluded_str = ", ".join(excluded_charts)
-    system_prompt = f"""
-    You are a data assistant specialized in event log analysis. Based on the user's analysis question, suggest between 3 and 10 insightful visualization ideas. The visualizations should support the user to check if the event log is valid for its intended purpose. Avoid suggesting the following chart types: {excluded_str}.
-    Return only a clean bullet list with short and precise explanations. Each suggestion should be unique and data-insightful.
-    """
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"My analysis question is: {question}"}
-    ]
-    response = client.chat.completions.create(
-        model=os.getenv("AZURE_OPENAI_MODEL"),
-        messages=messages
-    )
-    suggestions_raw = response.choices[0].message.content
-    suggestions = [line.lstrip("-• ").strip() for line in suggestions_raw.splitlines() if line.strip()]
-    return suggestions[:10]
-
-# Header for suggested visualizations
+# --- Suggestions section ---
 st.subheader("🔍 Suggested Visualizations")
 
-# Show visualizations suggestions in the interface
-if "question_data" in st.session_state and st.session_state.question_data.strip():
-    question = st.session_state.question_data
+st.caption(
+    "Based on your analysis question, the assistant can suggest additional visualizations "
+    "that were **not** shown on the initial exploration pages yet."
+)
 
-    # List of excluded visualizations (shown already in the data_exploration section)
-    excluded_viz = ["absolute activity frequency", "relative activity frequency", "absolute case frequency", "relative case frequency", "event attribute frequency", "case length distribution", 
-                    "events per time", "daily event distribution", "weekly event distribution", "monthly event distribution", "yearly event distribution", "dotted chart cases by time", 
-                    "case duration distribution", "task responsibility heatmap", "resource attribute frequency"]
+if st.button("💡 Generate visualization suggestions"):
+    with st.spinner("Generating suggestions based on your question..."):
+        st.session_state["ix_viz_suggestions"] = suggest_visualizations(
+            st.session_state.question_data,
+            EXCLUDED_VIZ_LABELS,
+        )
+        st.session_state["ix_selected_viz_labels"] = []  # reset selection on new suggestion run
 
-    if st.button("💡 Generate Visualization Suggestions"):
-        with st.spinner("Generating suggestions..."):
-            suggestions = get_visualization_suggestions(question, excluded_viz)
-            st.session_state["viz_suggestions"] = suggestions
+suggestions = st.session_state.get("ix_viz_suggestions", [])
 
-# Mark chosen visualizaitons
-if "viz_suggestions" in st.session_state:
-    st.write("💬 Based on your question, here are some useful visualizations to consider:")
+if suggestions:
+    st.write("💬 Based on your question, these additional visualizations could be insightful:")
 
-    selected = st.session_state.get("selected_visualization", None)
-
-    if "selected_visualizations" not in st.session_state:
-        st.session_state["selected_visualizations"] = []
-
-    for i, suggestion in enumerate(st.session_state.viz_suggestions):
-        button_label = f"📊 {suggestion}"
-        is_selected = suggestion == selected
+    # Multi-select style with buttons (toggles)
+    for i, suggestion in enumerate(suggestions):
+        key = f"ix_sugg_{i}"
+        is_selected = suggestion in st.session_state["ix_selected_viz_labels"]
 
         with st.container():
-            if st.button(button_label, key=f"sugg_{i}"):
-                if suggestion not in st.session_state["selected_visualizations"]:
-                    st.session_state["selected_visualizations"].append(suggestion)
-            
-            if suggestion in st.session_state["selected_visualizations"]: 
-                st.success(f"✅ You selected: **{suggestion}**. See the corresponding plot & its statistics below.")
+            cols = st.columns([0.1, 0.9])
+            if cols[0].checkbox("", value=is_selected, key=key):
+                if suggestion not in st.session_state["ix_selected_viz_labels"]:
+                    st.session_state["ix_selected_viz_labels"].append(suggestion)
+            else:
+                if suggestion in st.session_state["ix_selected_viz_labels"]:
+                    st.session_state["ix_selected_viz_labels"].remove(suggestion)
 
-st.markdown("---")
+            cols[1].markdown(f"**{suggestion}**")
 
-# Show selected visualizations
-if st.session_state["selected_visualizations"]:
     st.markdown("---")
+
+# --- Generated plots for selected suggestions ---
+selected_viz = st.session_state.get("ix_selected_viz_labels", [])
+
+if selected_viz:
     st.subheader("📈 Generated Plots")
 
-    for selected_viz in st.session_state["selected_visualizations"]:
-        st.markdown(f"### 🔹 {selected_viz}")
+    for suggestion in selected_viz:
+        st.markdown(f"### 🔹 {suggestion}")
+        with st.spinner("Building visualization..."):
+            run_generated_visualization(
+                suggestion,
+                df,
+                case_id_key=case_id_key,
+                activity_key=activity_key,
+                timestamp_key=timestamp_key,
+                resource_key=resource_key,
+            )
+        st.markdown("---")
+else:
+    st.info("Select one or more suggested visualizations above to generate them on the event log.")
