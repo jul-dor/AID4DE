@@ -26,6 +26,13 @@ The manual page provides an overview of the tool’s functionality and purpose.
 
 ![PDF Export Page](images/manual_page.png)
 
+**Note:** This repository contains the implementation corresponding to the journal paper:
+
+*“Domain experts in the loop: Leveraging generative artificial intelligence for interactive data validation in process mining”*  
+https://www.sciencedirect.com/science/article/pii/S0306437926000293
+
+For detailed information about the methodology, experiments, and results, please refer to the publication.
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Clone the repository](#clone-the-repository)
